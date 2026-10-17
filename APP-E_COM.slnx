@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/Src/">
+    <Project Path="E_come-API/E_come-API.csproj" />
+    <Project Path="E_com_Core/E_com_Core.csproj" />
+    <Project Path="E_com_Infrastructurer/E_com_Infrastructurer.csproj" />
+  </Folder>
+</Solution>
