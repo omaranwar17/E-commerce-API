@@ -28,7 +28,7 @@ namespace E_come_API
               new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"))
           );
 
-
+            builder.Services.AddMemoryCache();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -37,6 +37,8 @@ namespace E_come_API
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            app.UseStatusCodePagesWithReExecute("/errors/{0}");
+            app.UseMiddleware<E_com_API.Middleware.ExceptionsMiddleware>();
 
             app.UseHttpsRedirection();
 
