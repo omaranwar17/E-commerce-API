@@ -3,6 +3,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Threading.Tasks;
+using System.Net;
+using E_come_API.Helpar;
+using System.Text.Json;
 
 namespace E_com_API.Middleware
 {
@@ -37,12 +40,15 @@ namespace E_com_API.Middleware
             }
             catch (Exception ex)
             {
-                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                //context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                context.Response.StatusCode =(int)HttpStatusCode.InternalServerError;
                 context.Response.ContentType = "application/json";
+                var res = new ApiException((int)HttpStatusCode.InternalServerError, ex.Message, ex.StackTrace);
+                var json = JsonSerializer.Serialize(res);
 
-                var message = _environment.IsDevelopment() ? ex.Message : "An internal server error has occurred.";
-
-                await context.Response.WriteAsJsonAsync(new { message = message });
+                //var message = _environment.IsDevelopment() ? ex.Message : "An internal server error has occurred.";
+                //await context.Response.WriteAsJsonAsync(new { message = message });
+                await context.Response.WriteAsJsonAsync(json);
             }
         }
 
@@ -62,7 +68,7 @@ namespace E_com_API.Middleware
                 timeStamp = dateNow;
             }
 
-            if (tokenCount >= 8) // 8 طلبات كحد أقصى في الـ 30 ثانية
+            if (tokenCount >= 8) 
             {
                 return false;
             }

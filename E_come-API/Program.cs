@@ -3,6 +3,7 @@ using E_com_Core.Services;
 using E_com_Infrastructurer;
 using E_com_Infrastructurer.Repository;
 using E_come_API.Mapping;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.FileProviders;
 using System.Reflection;
 
@@ -15,6 +16,13 @@ namespace E_come_API
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.Services.AddCors((op) =>
+            {
+                op.AddPolicy("CORSPolicy", (b) =>
+                {
+                    b.AllowAnyHeader().AllowAnyMethod().AllowCredentials().WithOrigins("https://localhost:4200");
+                });
+            });
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -36,18 +44,21 @@ namespace E_come_API
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
+             }
+            app.UseCors("CORSPolicy");
+
+                app.UseMiddleware<E_com_API.Middleware.ExceptionsMiddleware>();
+                app.UseStatusCodePagesWithReExecute("/errors/{0}");
+
+                app.UseHttpsRedirection();
+
+                app.UseAuthorization();
+
+
+                app.MapControllers();
+
+                app.Run();
             }
-            app.UseStatusCodePagesWithReExecute("/errors/{0}");
-            app.UseMiddleware<E_com_API.Middleware.ExceptionsMiddleware>();
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-            app.Run();
         }
     }
-}
+

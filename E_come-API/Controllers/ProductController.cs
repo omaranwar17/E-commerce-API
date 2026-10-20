@@ -16,25 +16,46 @@ namespace E_come_API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllProduct()
+        public async Task<IActionResult> GetAllProduct([FromQuery] ProductQueryParams query)
         {
             try
             {
-                var products = await work.productRepository.GetAllAsync(
-             s => s.Categorys,
-             s => s.Photos
-         );
-                if (products == null) return BadRequest(new ResponseApi(400));
-                var dto = mapper.Map<List<ProdDto>>(products);
+                if (query.PageNumber < 1) query.PageNumber = 1;
+                if (query.PageSize < 1 || query.PageSize > 100) query.PageSize = 10;
 
-                return Ok(dto);
+                // ✅ بنستقبل PagedResult مش Tuple
+                var result = await work.productRepository.GetAllAsync(query);
+
+                return Ok(result); 
             }
             catch (Exception ex)
             {
-                return BadRequest(new ResponseApi(500, ex.Message));
+                return StatusCode(500, new ResponseApi(500, ex.Message));
             }
-
         }
+
+
+
+        //[HttpGet]
+        //public async Task<IActionResult> GetAllProduct()
+        //{
+        //    try
+        //    {
+        //        var products = await work.productRepository.GetAllAsync(
+        //     s => s.Categorys,
+        //     s => s.Photos
+        // );
+        //        if (products == null) return BadRequest(new ResponseApi(400));
+        //        var dto = mapper.Map<List<ProdDto>>(products);
+
+        //        return Ok(dto);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new ResponseApi(500, ex.Message));
+        //    }
+
+        //}
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetProductId(int id)
