@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using E_com_Core.Interfases;
+using E_com_Core.Model.Common;
 using E_com_Core.Model.Products;
 using E_com_Core.Services;
 using E_com_Infrastructurer.Data.Context;
@@ -27,6 +28,123 @@ namespace E_com_Infrastructurer.Repository
             this.storeDb = storeDb;
 
         }
+
+        public async Task<PagedResult<ProduDtoP>> GetAllAsync(ProductQueryParams q)
+        {
+            var query = storeDb.Products
+                .AsNoTracking()
+                .Include(p => p.Categorys)
+                .Include(p => p.Photos)
+                .AsQueryable();
+
+           
+
+            // 1. Filter by Category
+            if (q.CategoryId > 0)
+                query = query.Where(p => p.CategoryId == q.CategoryId);
+
+            // ✅ 2. Filter by Search (ضيف السطور دي)
+            //if (!string.IsNullOrWhiteSpace(q.Search))
+            //{
+            //    query = query.Where(p => p.Name.Contains(q.Search) || p.Description.Contains(q.Search));
+            //}
+
+            // ✅ 2. Filter by Search (النسخة الأفضل والاحترافية)
+            if (!string.IsNullOrWhiteSpace(q.Search))
+            {
+                // 1. تحويل النص لحروف صغيرة وتقسيمه لكلمات منفصلة
+                var keywords = q.Search.Trim().ToLower()
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                // 2. البحث عن كل كلمة في الاسم أو الوصف
+                foreach (var word in keywords)
+                {
+                    var term = word; // متغير محلي للاستخدام داخل الـ LINQ
+                    query = query.Where(p =>
+                        p.Name.ToLower().Contains(term) ||
+                        p.Description.ToLower().Contains(term));
+                }
+            }
+
+            // 3. Count (هيتحسب بعد الفلاتر كلها)
+            var totalCount = await query.CountAsync();
+
+            query = q.Sort?.ToLower() switch
+            {
+                "price" => query.OrderBy(p => p.NewPrice).ThenBy(p => p.Id),
+                "price_desc" => query.OrderByDescending(p => p.NewPrice).ThenBy(p => p.Id),
+                "name" => query.OrderBy(p => p.Name).ThenBy(p => p.Id),
+                "newest" => query.OrderByDescending(p => p.Id),
+                _ => query.OrderBy(p => p.Id)
+            };
+
+            var data = await query
+                .Skip((q.PageNumber - 1) * q.PageSize)
+                .Take(q.PageSize)
+                .Select(p => new ProduDtoP
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    NewPrice = p.NewPrice,
+                    CategoryName = p.Categorys.Name,
+                    Photos = p.Photos.Select(ph => new PhotoDtos
+                    {
+                        ProductId = ph.ProductId,
+                        ImageName = ph.ImageName
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            // ✅ هنا بنرجع الشكل اللي في Postman
+            return new PagedResult<ProduDtoP>
+            {
+                PageNumber = q.PageNumber,
+                PageSize = q.PageSize,
+                TotalCount = totalCount,
+                Data = data
+            };
+        }
+
+        //public async Task<IEnumerable<ProduDtoP>> GetAllAsync(string sort, int categoryId)
+        //{
+        //    var query = storeDb.Products
+        //        .Include(p => p.Categorys)
+        //        .Include(p => p.Photos)
+        //        .AsQueryable();
+
+        //    if (categoryId > 0)
+        //        query = query.Where(p => p.CategoryId == categoryId);
+
+        //    query = sort?.ToLower() switch
+        //    {
+        //        "price" => query.OrderBy(p => p.NewPrice),
+        //        "price_desc" => query.OrderByDescending(p => p.NewPrice),
+        //        "name" => query.OrderBy(p => p.Name),
+        //        "name_desc" => query.OrderByDescending(p => p.Name),
+        //        "newest" => query.OrderByDescending(p => p.Id),
+        //        _ => query.OrderBy(p => p.Id)
+        //    };
+
+        //    var result = await query
+        //        .Select(p => new ProduDtoP
+        //        {
+        //            Id = p.Id,
+        //            Name = p.Name,
+        //            Description = p.Description,
+        //            NewPrice = p.NewPrice,
+        //            CategoryName = p.Categorys.Name,
+        //            Photos = p.Photos.Select(ph => new PhotoDtos
+        //            {
+        //                ProductId = ph.ProductId,
+        //                ImageName = ph.ImageName
+        //            }).ToList()
+        //        })
+        //        .ToListAsync();
+
+        //    return result;
+        //}
+
 
         public async Task<bool> AddAsync(AddPDtos productDto)
         {
