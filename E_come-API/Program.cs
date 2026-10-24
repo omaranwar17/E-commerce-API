@@ -20,7 +20,7 @@ namespace E_come_API
             {
                 op.AddPolicy("CORSPolicy", (b) =>
                 {
-                    b.AllowAnyHeader().AllowAnyMethod().AllowCredentials().WithOrigins("https://localhost:4200");
+                    b.AllowAnyHeader().AllowAnyMethod().AllowCredentials().WithOrigins("http://localhost:4200");
                 });
             });
 
@@ -46,8 +46,9 @@ namespace E_come_API
                 app.UseSwaggerUI();
              }
             app.UseCors("CORSPolicy");
+            app.UseStaticFiles();
 
-                app.UseMiddleware<E_com_API.Middleware.ExceptionsMiddleware>();
+            app.UseMiddleware<E_com_API.Middleware.ExceptionsMiddleware>();
                 app.UseStatusCodePagesWithReExecute("/errors/{0}");
 
                 app.UseHttpsRedirection();

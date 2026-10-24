@@ -43,13 +43,6 @@ namespace E_com_Infrastructurer.Repository
             if (q.CategoryId > 0)
                 query = query.Where(p => p.CategoryId == q.CategoryId);
 
-            // ✅ 2. Filter by Search (ضيف السطور دي)
-            //if (!string.IsNullOrWhiteSpace(q.Search))
-            //{
-            //    query = query.Where(p => p.Name.Contains(q.Search) || p.Description.Contains(q.Search));
-            //}
-
-            // ✅ 2. Filter by Search (النسخة الأفضل والاحترافية)
             if (!string.IsNullOrWhiteSpace(q.Search))
             {
                 // 1. تحويل النص لحروف صغيرة وتقسيمه لكلمات منفصلة
@@ -87,6 +80,7 @@ namespace E_com_Infrastructurer.Repository
                     Name = p.Name,
                     Description = p.Description,
                     NewPrice = p.NewPrice,
+                    OldPrice = p.OldPrice,
                     CategoryName = p.Categorys.Name,
                     Photos = p.Photos.Select(ph => new PhotoDtos
                     {
@@ -105,46 +99,6 @@ namespace E_com_Infrastructurer.Repository
                 Data = data
             };
         }
-
-        //public async Task<IEnumerable<ProduDtoP>> GetAllAsync(string sort, int categoryId)
-        //{
-        //    var query = storeDb.Products
-        //        .Include(p => p.Categorys)
-        //        .Include(p => p.Photos)
-        //        .AsQueryable();
-
-        //    if (categoryId > 0)
-        //        query = query.Where(p => p.CategoryId == categoryId);
-
-        //    query = sort?.ToLower() switch
-        //    {
-        //        "price" => query.OrderBy(p => p.NewPrice),
-        //        "price_desc" => query.OrderByDescending(p => p.NewPrice),
-        //        "name" => query.OrderBy(p => p.Name),
-        //        "name_desc" => query.OrderByDescending(p => p.Name),
-        //        "newest" => query.OrderByDescending(p => p.Id),
-        //        _ => query.OrderBy(p => p.Id)
-        //    };
-
-        //    var result = await query
-        //        .Select(p => new ProduDtoP
-        //        {
-        //            Id = p.Id,
-        //            Name = p.Name,
-        //            Description = p.Description,
-        //            NewPrice = p.NewPrice,
-        //            CategoryName = p.Categorys.Name,
-        //            Photos = p.Photos.Select(ph => new PhotoDtos
-        //            {
-        //                ProductId = ph.ProductId,
-        //                ImageName = ph.ImageName
-        //            }).ToList()
-        //        })
-        //        .ToListAsync();
-
-        //    return result;
-        //}
-
 
         public async Task<bool> AddAsync(AddPDtos productDto)
         {

@@ -26,7 +26,7 @@ namespace E_come_API.Controllers
             {
                 var cat = await work.categoryRepository.GetAllAsync();
                 if (cat == null) return BadRequest(new ResponseApi(400));
-                return Ok(new ResponseApi(200));
+                return Ok(cat);
             }
             catch (Exception ex)
             {
