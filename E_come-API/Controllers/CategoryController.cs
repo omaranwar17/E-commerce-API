@@ -40,9 +40,15 @@ namespace E_come_API.Controllers
         {
             try
             {
+                if (id <= 0) return BadRequest(new ResponseApi(400));
                 var catId = await work.categoryRepository.GetByIdAsync(id);
                 if (catId == null) return BadRequest(new ResponseApi(400));
-                return Ok(new ResponseApi( 200));
+                return Ok(new EditCateDto
+                {
+                    Id = catId.Id,
+                    Name = catId.Name,
+                    Description = catId.Description
+                });
 
             }
             catch(Exception ex)
@@ -87,20 +93,38 @@ namespace E_come_API.Controllers
             }
         }
 
+        //[HttpPut("{id:int}")]
+        //public async Task<IActionResult> UpdateCategory(EditCateDto category)
+        //{
+        //    try
+        //    {
+        //        var edit = mapper.Map<Category>(category);
+        //        if (edit == null) return BadRequest(new ResponseApi(400));
+        //        await work.categoryRepository.Update(edit);
+        //        return Ok(new ResponseApi(200));
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new ResponseApi(500));
+        //    }
+        //}
+
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> UpdateCategory(EditCateDto category)
+        public async Task<IActionResult> UpdateCategory(int id, [FromBody] EditCateDto category)
         {
             try
             {
+                if (id <= 0 || category is null || id != category.Id)
+                    return BadRequest(new ResponseApi(400));
+
                 var edit = mapper.Map<Category>(category);
-                if (edit == null) return BadRequest(new ResponseApi(400));
                 await work.categoryRepository.Update(edit);
                 return Ok(new ResponseApi(200));
-
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return BadRequest(new ResponseApi(500));
+                return StatusCode(500, new ResponseApi(500));
             }
         }
 

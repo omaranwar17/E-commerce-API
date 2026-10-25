@@ -68,7 +68,7 @@ namespace E_com_API.Middleware
                 timeStamp = dateNow;
             }
 
-            if (tokenCount >= 8) 
+            if (tokenCount >= 15) 
             {
                 return false;
             }
