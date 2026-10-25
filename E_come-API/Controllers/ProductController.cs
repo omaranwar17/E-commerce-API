@@ -5,6 +5,7 @@ using E_come_API.DTO;
 using E_come_API.Helpar;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace E_come_API.Controllers
 {
@@ -77,27 +78,54 @@ namespace E_come_API.Controllers
 
         }
 
+        //[HttpDelete("{id:int}")]
+        //public async Task<IActionResult> Delete(int id)
+        //{
+        //    try
+        //    {
+        //        if (id <= 0) return BadRequest(new ResponseApi(400));
+
+        //      var prodId = await work.productRepository.GetByIdAsync(id, (p)=>p.Photos, (p)=>p.Categorys);
+        //        await work.productRepository.Delete(prodId);
+        //        return Ok(new ResponseApi(200));
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new ResponseApi(500));
+        //    }
+        //}
+
+
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
+            if (id <= 0) return BadRequest(new ResponseApi(400, "Invalid id"));
+
             try
             {
-                if (id <= 0) return BadRequest(new ResponseApi(400));
+                var product = await work.productRepository.GetByIdAsync(id, p => p.Photos);
+                if (product == null) return NotFound(new ResponseApi(404, "Product not found"));
 
-              var prodId = await work.productRepository.GetByIdAsync(id, (p)=>p.Photos, (p)=>p.Categorys);
-                await work.productRepository.Delete(prodId);
+                var deleted = await work.productRepository.Delete(product);
+                if (!deleted) return BadRequest(new ResponseApi(400, "Delete failed"));
+
                 return Ok(new ResponseApi(200));
-
+            }
+            catch (DbUpdateException)
+            {
+                // غالباً المنتج مرتبط ببيانات تانية (طلبات / سلة)
+                return Conflict(new ResponseApi(409, "Product is referenced by other data and cannot be deleted"));
             }
             catch (Exception ex)
             {
-                return BadRequest(new ResponseApi(500));
+                return StatusCode(500, new ResponseApi(500, ex.Message));
             }
         }
 
 
         [HttpPost]
-        public async Task<IActionResult> AddProduct(AddPDtos  dtos)
+        public async Task<IActionResult> AddProduct( [FromForm] AddPDtos  dtos)
         {
             try
             {
@@ -113,16 +141,36 @@ namespace E_come_API.Controllers
             }
         }
 
-        [HttpPut]
-        public async Task<IActionResult> UpdateProduct(EditProdDto dto)
+        //[HttpPut("{id:int}")]
+        //public async Task<IActionResult> UpdateProduct(int id,[FromForm] EditProdDto dto)
+        //{
+        //    if (id != dto.Id) return BadRequest("ID mismatch");
+
+        //    try
+        //    {
+        //        var edit = mapper.Map<Product>(dto);
+        //        if (edit == null) return BadRequest(new ResponseApi(400));
+        //        await work.productRepository.Update(edit);
+        //        return Ok(new ResponseApi(200));
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new ResponseApi(500, ex.Message));
+        //    }
+        //}
+
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> UpdateProduct(int id, [FromForm] EditProdDto dto)
         {
+            if (id != dto.Id) return BadRequest(new ResponseApi(400, "ID mismatch"));
+
             try
             {
-                var edit = mapper.Map<Product>(dto);
-                if (edit == null) return BadRequest(new ResponseApi(400));
-                await work.productRepository.Update(edit);
-                return Ok(new ResponseApi(200));
+                var updated = await work.productRepository.UpdateAsync(dto);
+                if (!updated) return NotFound(new ResponseApi(404, "Product not found"));
 
+                return Ok(new ResponseApi(200));
             }
             catch (Exception ex)
             {

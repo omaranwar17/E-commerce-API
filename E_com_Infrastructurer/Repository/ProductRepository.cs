@@ -134,27 +134,66 @@ namespace E_com_Infrastructurer.Repository
             return true;
         }
 
+        //public async Task<bool> UpdateAsync(EditProdDto productDto)
+        //{
+        //    if (productDto == null) return false;
+        //    var findProd =  storeDb.Products.Include((p) => p.Categorys)
+        //         .Include((p) => p.Photos).FirstOrDefault((p) => p.Id == productDto.Id);
+        //    if (findProd == null) return false;
+        //   mapper.Map(productDto , findProd);
+        //    var findId = await storeDb.Photos.Where((p) => p.ProductId == productDto.Id).ToListAsync();
+        //    foreach (var item in findId)
+        //    {
+        //        services.DeleteAsync(item.ImageName);
+
+        //    }
+        //    storeDb.Photos.RemoveRange(findId);
+        //    var addImg = await services.AddImageAsync(productDto.Photos , productDto.Name);
+        //    var path = addImg.Select((s) => new Photo
+        //    {
+        //        ImageName = s,
+        //        ProductId = productDto.Id,
+        //    }).ToList();
+        //    await storeDb.Photos.AddRangeAsync(path);
+        //    await storeDb.SaveChangesAsync();
+        //    return true;
+        //}
+
         public async Task<bool> UpdateAsync(EditProdDto productDto)
         {
             if (productDto == null) return false;
-            var findProd =  storeDb.Products.Include((p) => p.Categorys)
-                 .Include((p) => p.Photos).FirstOrDefault((p) => p.Id == productDto.Id);
-            if (findProd == null) return false;
-           mapper.Map(productDto , findProd);
-            var findId = await storeDb.Photos.Where((p) => p.ProductId == productDto.Id).ToListAsync();
-            foreach (var item in findId)
-            {
-                services.DeleteAsync(item.ImageName);
 
-            }
-            storeDb.Photos.RemoveRange(findId);
-            var addImg = await services.AddImageAsync(productDto.Photos , productDto.Name);
-            var path = addImg.Select((s) => new Photo
+            var findProd = storeDb.Products.Include((p) => p.Categorys)
+                 .Include((p) => p.Photos).FirstOrDefault((p) => p.Id == productDto.Id);
+
+            if (findProd == null) return false;
+
+            // 1. تحديث بيانات المنتج الأساسية
+            mapper.Map(productDto, findProd);
+
+            // 2. التعامل مع الصور (التعديل هنا)
+            // نشوف هل المستخدم باعت صور جديدة ولا لأ
+            if (productDto.Photos != null && productDto.Photos.Count > 0)
             {
-                ImageName = s,
-                ProductId = productDto.Id,
-            }).ToList();
-            await storeDb.Photos.AddRangeAsync(path);
+                // لو باعت صور جديدة: نمسح القديمة ونضيف الجديدة
+                var oldPhotos = await storeDb.Photos.Where((p) => p.ProductId == productDto.Id).ToListAsync();
+                foreach (var item in oldPhotos)
+                {
+                    services.DeleteAsync(item.ImageName);
+                }
+                storeDb.Photos.RemoveRange(oldPhotos);
+
+                var addImg = await services.AddImageAsync(productDto.Photos, productDto.Name);
+                var path = addImg.Select((s) => new Photo
+                {
+                    ImageName = s,
+                    ProductId = productDto.Id,
+                }).ToList();
+
+                await storeDb.Photos.AddRangeAsync(path);
+            }
+            // لو مفيش صور جديدة (productDto.Photos فاضية أو null)، منعملش حاجة والصور القديمة هتفضل زي ما هي
+
             await storeDb.SaveChangesAsync();
             return true;
         }
