@@ -5,6 +5,7 @@ using E_com_Infrastructurer.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace E_com_Infrastructurer
 {
@@ -22,6 +23,18 @@ namespace E_com_Infrastructurer
 
             // 2. Generic Repository
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+
+            services.AddSingleton<IConnectionMultiplexer>((IServiceProvider i) =>
+            {
+                // سحب الـ connection string باستخدام الـ i (اللي هو الـ IServiceProvider)
+                var connectionString = i.GetRequiredService<IConfiguration>().GetConnectionString("redis");
+
+                // تحويل النص لإعدادات
+                var config = ConfigurationOptions.Parse(connectionString);
+
+                // عمل الاتصال
+                return ConnectionMultiplexer.Connect(config);
+            });
 
             // 3. ⬇️⬇️⬇️ ضيف السطور دي بالظبط ⬇️⬇️⬇️
             services.AddScoped<ICategoryRepository, CategoryRepository>();
