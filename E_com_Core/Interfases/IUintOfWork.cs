@@ -11,6 +11,7 @@ namespace E_com_Core.Interfases
         public ICategoryRepository categoryRepository { get; }
         public IProductRepository  productRepository { get; }
         public IPhotoRepository  photoRepository { get; }
+        public ICustomerBasketRepository  customerBasket { get; }
       
     }
 }

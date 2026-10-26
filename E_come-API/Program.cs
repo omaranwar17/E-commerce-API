@@ -1,4 +1,5 @@
 
+using E_com_Core.Interfases;
 using E_com_Core.Services;
 using E_com_Infrastructurer;
 using E_com_Infrastructurer.Repository;
@@ -30,7 +31,9 @@ namespace E_come_API
             builder.Services.AddSwaggerGen();
             builder.Services.AddAutoMapper(cfg => { }, typeof(Program).Assembly);
             builder.Services.InfrastructurerColl(builder.Configuration);
+           
             builder.Services.AddScoped<IImageServices, ImageServices>();
+            builder.Services.AddScoped<ICustomerBasketRepository, CustomerBasketRepository>();
 
             builder.Services.AddSingleton<IFileProvider>(
               new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"))
