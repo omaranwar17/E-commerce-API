@@ -5,6 +5,7 @@ using E_com_Infrastructurer.Repository;
 using E_come_API.DTO;
 using E_come_API.Helpar;
 using E_come_API.Mapping;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -58,6 +59,7 @@ namespace E_come_API.Controllers
 
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -75,7 +77,7 @@ namespace E_come_API.Controllers
                 return BadRequest(new ResponseApi(500));
             }
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> AddCategory(CategoryDto category)
         {
@@ -109,7 +111,7 @@ namespace E_come_API.Controllers
         //        return BadRequest(new ResponseApi(500));
         //    }
         //}
-
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateCategory(int id, [FromBody] EditCateDto category)
         {

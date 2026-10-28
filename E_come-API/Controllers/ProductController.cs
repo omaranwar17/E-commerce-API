@@ -3,6 +3,7 @@ using E_com_Core.Interfases;
 using E_com_Core.Model.Products;
 using E_come_API.DTO;
 using E_come_API.Helpar;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -96,7 +97,7 @@ namespace E_come_API.Controllers
         //    }
         //}
 
-
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -123,7 +124,7 @@ namespace E_come_API.Controllers
             }
         }
 
-
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> AddProduct( [FromForm] AddPDtos  dtos)
         {
@@ -159,7 +160,7 @@ namespace E_come_API.Controllers
         //        return BadRequest(new ResponseApi(500, ex.Message));
         //    }
         //}
-
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateProduct(int id, [FromForm] EditProdDto dto)
         {

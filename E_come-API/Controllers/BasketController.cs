@@ -1,40 +1,56 @@
 ﻿using AutoMapper;
 using E_com_Core.Interfases;
 using E_com_Core.Model;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace E_come_API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class BasketController : BaseController
     {
         public BasketController(IUintOfWork work, IMapper mapper) : base(work, mapper)
         {
-
         }
 
-        // GET: api/basket/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<CustomerBasket>> GetBasket(string id)
+        // الـ key بيتحدد من التوكن، مش من الـ client
+        private string? BasketKey
         {
-            if (string.IsNullOrWhiteSpace(id))
-                return BadRequest("Basket id is required.");
-
-            var basket = await work.customerBasket.GetBasketAsync(id);
-
-            // لو مفيش سلة، نرجع سلة فاضية بنفس الـ id بدل null
-            return Ok(basket ?? new CustomerBasket { Id = id });
+            get
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                             ?? User.FindFirstValue(ClaimTypes.Email);
+                return string.IsNullOrWhiteSpace(userId) ? null : $"basket:{userId}";
+            }
         }
 
+        // GET: api/basket
+        [HttpGet]
+        public async Task<ActionResult<CustomerBasket>> GetBasket()
+        {
+            var key = BasketKey;
+            if (key is null) return Unauthorized();
 
+            var basket = await work.customerBasket.GetBasketAsync(key);
 
+            return Ok(basket ?? new CustomerBasket { Id = key });
+        }
+
+        // POST: api/basket
         [HttpPost]
         public async Task<ActionResult<CustomerBasket>> UpdateBasket([FromBody] CustomerBasket basket)
         {
-            if (basket is null || string.IsNullOrWhiteSpace(basket.Id))
-                return BadRequest("Basket and basket id are required.");
+            var key = BasketKey;
+            if (key is null) return Unauthorized();
+
+            if (basket is null || basket.basketItems is null)
+                return BadRequest("Basket is required.");
+
+            // نتجاهل أي Id جاي من الـ client
+            basket.Id = key;
 
             foreach (var item in basket.basketItems)
             {
@@ -58,36 +74,19 @@ namespace E_come_API.Controllers
             return Ok(updatedBasket);
         }
 
-        // POST: api/basket
-        //[HttpPost]
-        //public async Task<ActionResult<CustomerBasket>> UpdateBasket([FromBody] CustomerBasket basket)
-        //{
-        //    if (basket is null || string.IsNullOrWhiteSpace(basket.Id))
-        //        return BadRequest("Basket and basket id are required.");
-
-        //    var updatedBasket = await work.customerBasket.UpdateBasketAsync(basket);
-
-        //    if (updatedBasket is null)
-        //        return BadRequest("Failed to update the basket.");
-
-        //    return Ok(updatedBasket);
-        //}
-
-        // DELETE: api/basket/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteBasket(string id)
+        // DELETE: api/basket
+        [HttpDelete]
+        public async Task<IActionResult> DeleteBasket()
         {
-            if (string.IsNullOrWhiteSpace(id))
-                return BadRequest("Basket id is required.");
+            var key = BasketKey;
+            if (key is null) return Unauthorized();
 
-            var deleted = await work.customerBasket.Delete(id);
+            var deleted = await work.customerBasket.Delete(key);
 
             if (!deleted)
                 return NotFound("Basket not found.");
 
             return NoContent();
         }
-
-
     }
 }

@@ -106,6 +106,7 @@ namespace E_come_API
 
             app.UseAuthorization();
             app.UseStatusCodePagesWithReExecute("/errors/{0}");
+            app.UseStatusCodePages();
 
             app.UseHttpsRedirection();
             app.MapControllers();
