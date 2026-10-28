@@ -22,6 +22,7 @@ namespace E_com_Infrastructurer.Data.Context
         public virtual DbSet<Product>  Products { get; set; }
         public virtual DbSet<Photo>  Photos { get; set; }
         public virtual DbSet<Address>  Addresses { get; set; }
+        public DbSet<Size> Sizes { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             //base.OnModelCreating(modelBuilder);
