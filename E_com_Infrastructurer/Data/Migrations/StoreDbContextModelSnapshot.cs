@@ -34,6 +34,9 @@ namespace E_com_Infrastructurer.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("HasSizes")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -48,12 +51,14 @@ namespace E_com_Infrastructurer.Data.Migrations
                         {
                             Id = 1,
                             Description = "tests",
+                            HasSizes = false,
                             Name = "test"
                         },
                         new
                         {
                             Id = 2,
                             Description = "phones",
+                            HasSizes = false,
                             Name = "phone"
                         });
                 });
@@ -120,9 +125,17 @@ namespace E_com_Infrastructurer.Data.Migrations
                     b.Property<decimal>("OldPrice")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("SizeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Sizes")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("SizeId");
 
                     b.ToTable("Products");
 
@@ -154,6 +167,23 @@ namespace E_com_Infrastructurer.Data.Migrations
                             NewPrice = 60000m,
                             OldPrice = 0m
                         });
+                });
+
+            modelBuilder.Entity("E_com_Core.Model.Products.Size", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Sizes");
                 });
 
             modelBuilder.Entity("E_com_Core.Model.User.Address", b =>
@@ -421,6 +451,10 @@ namespace E_com_Infrastructurer.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("E_com_Core.Model.Products.Size", null)
+                        .WithMany("Products")
+                        .HasForeignKey("SizeId");
+
                     b.Navigation("Categorys");
                 });
 
@@ -494,6 +528,11 @@ namespace E_com_Infrastructurer.Data.Migrations
             modelBuilder.Entity("E_com_Core.Model.Products.Product", b =>
                 {
                     b.Navigation("Photos");
+                });
+
+            modelBuilder.Entity("E_com_Core.Model.Products.Size", b =>
+                {
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("E_com_Core.Model.User.AppUser", b =>

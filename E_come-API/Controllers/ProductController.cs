@@ -25,39 +25,15 @@ namespace E_come_API.Controllers
                 if (query.PageNumber < 1) query.PageNumber = 1;
                 if (query.PageSize < 1 || query.PageSize > 100) query.PageSize = 10;
 
-                // ✅ بنستقبل PagedResult مش Tuple
                 var result = await work.productRepository.GetAllAsync(query);
 
-                return Ok(result); 
+                return Ok(result);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new ResponseApi(500, ex.Message));
             }
         }
-
-
-
-        //[HttpGet]
-        //public async Task<IActionResult> GetAllProduct()
-        //{
-        //    try
-        //    {
-        //        var products = await work.productRepository.GetAllAsync(
-        //     s => s.Categorys,
-        //     s => s.Photos
-        // );
-        //        if (products == null) return BadRequest(new ResponseApi(400));
-        //        var dto = mapper.Map<List<ProdDto>>(products);
-
-        //        return Ok(dto);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new ResponseApi(500, ex.Message));
-        //    }
-
-        //}
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetProductId(int id)
@@ -66,7 +42,7 @@ namespace E_come_API.Controllers
             {
                 var proId = await work.productRepository.GetByIdAsync(id,
                     s => s.Categorys,
-                    s => s.Photos); 
+                    s => s.Photos);
                 var dto = mapper.Map<ProdDto>(proId);
                 if (proId == null) return BadRequest(new ResponseApi(400));
                 return Ok(dto);
@@ -78,24 +54,6 @@ namespace E_come_API.Controllers
             }
 
         }
-
-        //[HttpDelete("{id:int}")]
-        //public async Task<IActionResult> Delete(int id)
-        //{
-        //    try
-        //    {
-        //        if (id <= 0) return BadRequest(new ResponseApi(400));
-
-        //      var prodId = await work.productRepository.GetByIdAsync(id, (p)=>p.Photos, (p)=>p.Categorys);
-        //        await work.productRepository.Delete(prodId);
-        //        return Ok(new ResponseApi(200));
-
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new ResponseApi(500));
-        //    }
-        //}
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int}")]
@@ -115,7 +73,6 @@ namespace E_come_API.Controllers
             }
             catch (DbUpdateException)
             {
-                // غالباً المنتج مرتبط ببيانات تانية (طلبات / سلة)
                 return Conflict(new ResponseApi(409, "Product is referenced by other data and cannot be deleted"));
             }
             catch (Exception ex)
@@ -126,15 +83,25 @@ namespace E_come_API.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPost]
-        public async Task<IActionResult> AddProduct( [FromForm] AddPDtos  dtos)
+        public async Task<IActionResult> AddProduct([FromForm] AddPDtos dtos)
         {
             try
             {
-                //var add = mapper.Map<Product>(product);
                 if (dtos == null) return BadRequest(new ResponseApi(400));
+
+                var category = await work.categoryRepository.GetByIdAsync(dtos.CategoryId);
+                if (category == null)
+                    return BadRequest(new ResponseApi(400, "الكاتجري مش موجودة"));
+
+                // ✅ التعديل هنا: التحقق من الليستة مش المقاس الواحد
+                if (category.HasSizes && (dtos.Sizes == null || dtos.Sizes.Count == 0))
+                    return BadRequest(new ResponseApi(400, "لازم تختار مقاس واحد على الأقل للمنتج ده"));
+
+                if (!category.HasSizes)
+                    dtos.Sizes = null;
+
                 await work.productRepository.AddAsync(dtos);
                 return Ok(new ResponseApi(201));
-
             }
             catch (Exception ex)
             {
@@ -142,24 +109,6 @@ namespace E_come_API.Controllers
             }
         }
 
-        //[HttpPut("{id:int}")]
-        //public async Task<IActionResult> UpdateProduct(int id,[FromForm] EditProdDto dto)
-        //{
-        //    if (id != dto.Id) return BadRequest("ID mismatch");
-
-        //    try
-        //    {
-        //        var edit = mapper.Map<Product>(dto);
-        //        if (edit == null) return BadRequest(new ResponseApi(400));
-        //        await work.productRepository.Update(edit);
-        //        return Ok(new ResponseApi(200));
-
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new ResponseApi(500, ex.Message));
-        //    }
-        //}
         [Authorize(Roles = "Admin")]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateProduct(int id, [FromForm] EditProdDto dto)
@@ -168,6 +117,17 @@ namespace E_come_API.Controllers
 
             try
             {
+                var category = await work.categoryRepository.GetByIdAsync(dto.CategoryId);
+                if (category == null)
+                    return BadRequest(new ResponseApi(400, "الكاتجري مش موجودة"));
+
+                // ✅ التعديل هنا: التحقق من الليستة مش المقاس الواحد
+                if (category.HasSizes && (dto.Sizes == null || dto.Sizes.Count == 0))
+                    return BadRequest(new ResponseApi(400, "لازم تختار مقاس واحد على الأقل للمنتج ده"));
+
+                if (!category.HasSizes)
+                    dto.Sizes = null;
+
                 var updated = await work.productRepository.UpdateAsync(dto);
                 if (!updated) return NotFound(new ResponseApi(404, "Product not found"));
 
@@ -177,6 +137,14 @@ namespace E_come_API.Controllers
             {
                 return BadRequest(new ResponseApi(500, ex.Message));
             }
+        }
+
+        [HttpGet("sizes")]
+        public IActionResult GetSizes()
+        {
+            var sizes = Enum.GetValues<ProductSize>()
+                .Select(s => new { Id = (int)s, Name = s.ToString() });
+            return Ok(sizes);
         }
     }
 }

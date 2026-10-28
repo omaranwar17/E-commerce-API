@@ -95,22 +95,7 @@ namespace E_come_API.Controllers
             }
         }
 
-        //[HttpPut("{id:int}")]
-        //public async Task<IActionResult> UpdateCategory(EditCateDto category)
-        //{
-        //    try
-        //    {
-        //        var edit = mapper.Map<Category>(category);
-        //        if (edit == null) return BadRequest(new ResponseApi(400));
-        //        await work.categoryRepository.Update(edit);
-        //        return Ok(new ResponseApi(200));
-
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new ResponseApi(500));
-        //    }
-        //}
+ 
         [Authorize(Roles = "Admin")]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateCategory(int id, [FromBody] EditCateDto category)
