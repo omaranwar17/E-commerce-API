@@ -17,6 +17,7 @@ namespace E_com_Infrastructurer.Data.Configurations
             builder.Property(p => p.Id).IsRequired();     
             builder.Property(p => p.Description).IsRequired();
             builder.Property(p => p.NewPrice).IsRequired().HasColumnType("decimal(18,2)");
+            builder.Property(p => p.OldPrice).IsRequired().HasColumnType("decimal(18,2)");
             builder.HasData(
                new Product { Id = 1, Name = "tv", Description = "tv dell" , NewPrice= 20000 , CategoryId=1 },
                new Product { Id = 2, Name = "ios", Description = "ios mobile" , NewPrice = 30000 , CategoryId = 1 },

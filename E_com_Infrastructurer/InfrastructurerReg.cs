@@ -1,7 +1,9 @@
 ﻿using E_com_Core.Interfases;
 using E_com_Core.Services;
+using E_com_Core.Shering;
 using E_com_Infrastructurer.Data.Context;
 using E_com_Infrastructurer.Repository;
+using E_com_Infrastructurer.Repository.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,10 +42,13 @@ namespace E_com_Infrastructurer
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<IPhotoRepository, PhotoRepository>();
+            services.AddScoped<IGenerateToken, GenerateToken>();
       
 
             // 4. UnitOfWork
             services.AddScoped<IUintOfWork, UnitOfWork>();
+
+           
 
             return services;
         }

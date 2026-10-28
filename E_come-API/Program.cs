@@ -1,12 +1,19 @@
-
 using E_com_Core.Interfases;
+using E_com_Core.Model.User;
 using E_com_Core.Services;
 using E_com_Infrastructurer;
+using E_com_Infrastructurer.Data.Context;
 using E_com_Infrastructurer.Repository;
+using E_com_Infrastructurer.Repository.Services;
 using E_come_API.Mapping;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
+using System.Text;
 
 namespace E_come_API
 {
@@ -26,18 +33,61 @@ namespace E_come_API
             });
 
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddAutoMapper(cfg => { }, typeof(Program).Assembly);
+            builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
+            {
+                options.User.AllowedUserNameCharacters =
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+ ";
+            })
+            .AddEntityFrameworkStores<StoreDbContext>()
+            .AddDefaultTokenProviders();
+
             builder.Services.InfrastructurerColl(builder.Configuration);
-           
+
             builder.Services.AddScoped<IImageServices, ImageServices>();
+            builder.Services.AddScoped<IAuth, AuthRepository>();
+            builder.Services.AddScoped<IEmailService, EmailService>();
             builder.Services.AddScoped<ICustomerBasketRepository, CustomerBasketRepository>();
 
             builder.Services.AddSingleton<IFileProvider>(
-              new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"))
-          );
+                new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"))
+            );
+
+            builder.Services.AddAuthentication(op =>
+            {
+                op.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                op.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                op.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(op =>
+            {
+                op.RequireHttpsMetadata = false;
+                op.SaveToken = true;
+
+                op.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Token:Secret"])),
+
+                    ValidateIssuer = true,
+                    ValidIssuer = builder.Configuration["Token:Issure"],
+
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.Zero,
+                };
+
+                // قراءة التوكن من الكوكيز
+                op.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        context.Token = context.Request.Cookies["token"];
+                        return Task.CompletedTask;
+                    }
+                };
+            });
 
             builder.Services.AddMemoryCache();
             var app = builder.Build();
@@ -47,22 +97,20 @@ namespace E_come_API
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-             }
+            }
             app.UseCors("CORSPolicy");
             app.UseStaticFiles();
 
             app.UseMiddleware<E_com_API.Middleware.ExceptionsMiddleware>();
-                app.UseStatusCodePagesWithReExecute("/errors/{0}");
+            app.UseAuthentication();
 
-                app.UseHttpsRedirection();
+            app.UseAuthorization();
+            app.UseStatusCodePagesWithReExecute("/errors/{0}");
 
-                app.UseAuthorization();
+            app.UseHttpsRedirection();
+            app.MapControllers();
 
-
-                app.MapControllers();
-
-                app.Run();
-            }
+            app.Run();
         }
     }
-
+}

@@ -1,4 +1,6 @@
 ﻿using E_com_Core.Model.Products;
+using E_com_Core.Model.User;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -9,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace E_com_Infrastructurer.Data.Context
 {
-    public class StoreDbContext : DbContext
+    public class StoreDbContext : IdentityDbContext<AppUser>
     {
         public StoreDbContext(DbContextOptions<StoreDbContext> options) :base(options)
         {
@@ -19,9 +21,11 @@ namespace E_com_Infrastructurer.Data.Context
         public virtual DbSet<Category> Categories { get; set; }
         public virtual DbSet<Product>  Products { get; set; }
         public virtual DbSet<Photo>  Photos { get; set; }
+        public virtual DbSet<Address>  Addresses { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             //base.OnModelCreating(modelBuilder);
+            base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());        }
        
     }
