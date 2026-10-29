@@ -1,4 +1,5 @@
-﻿using E_com_Core.Model.Products;
+﻿using E_com_Core.Model.Checkout;
+using E_com_Core.Model.Products;
 using E_com_Core.Model.User;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,8 @@ namespace E_com_Infrastructurer.Data.Context
         public virtual DbSet<Product>  Products { get; set; }
         public virtual DbSet<Photo>  Photos { get; set; }
         public virtual DbSet<Address>  Addresses { get; set; }
+        public DbSet<Order> Orders => Set<Order>();
+        public DbSet<OrderItem> OrderItems => Set<OrderItem>();
         public DbSet<Size> Sizes { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
