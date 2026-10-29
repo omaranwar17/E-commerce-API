@@ -1,4 +1,5 @@
 using E_com_Core.Interfases;
+using E_com_Core.Model.Checkout;
 using E_com_Core.Model.User;
 using E_com_Core.Services;
 using E_com_Infrastructurer;
@@ -50,6 +51,9 @@ namespace E_come_API
             builder.Services.AddScoped<IAuth, AuthRepository>();
             builder.Services.AddScoped<IEmailService, EmailService>();
             builder.Services.AddScoped<ICustomerBasketRepository, CustomerBasketRepository>();
+            builder.Services.AddScoped<IOrderService, OrderService>();
+            builder.Services.Configure<PaymentSettings>(
+    builder.Configuration.GetSection("PaymentSettings"));
 
             builder.Services.AddSingleton<IFileProvider>(
                 new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"))
