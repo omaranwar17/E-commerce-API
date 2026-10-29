@@ -4,12 +4,11 @@ using E_com_Core.Model.Checkout;
 using E_com_Infrastructurer.Data.Context;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+
 
 namespace E_com_Infrastructurer.Repository
 {
@@ -162,6 +161,93 @@ namespace E_com_Infrastructurer.Repository
                 Street = street,
                 Notes = notes
             }, null);
+        }
+
+
+        public async Task<List<OrderDto>> GetMyOrdersAsync(string email, int page, int pageSize)
+        {
+            page = Math.Max(1, page);
+            pageSize = Math.Clamp(pageSize, 1, 50);
+
+            var orders = await _storeDb.Orders
+                .AsNoTracking()
+                .Include(o => o.Items)
+                .Where(o => o.BuyerEmail == email)
+                .OrderByDescending(o => o.OrderDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return orders.Select(ToDto).ToList();
+        }
+
+        public async Task<OrderDto?> GetMyOrderAsync(string email, int id)
+        {
+            var order = await _storeDb.Orders
+                .AsNoTracking()
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.Id == id && o.BuyerEmail == email);
+
+            // لو الأوردر بتاع حد تاني بنرجّع null (404) عشان منكشفش إنه موجود
+            return order is null ? null : ToDto(order);
+        }
+
+        public async Task<List<AdminOrderListItemDto>> GetAdminListAsync(string? status, int page, int pageSize)
+        {
+            page = Math.Max(1, page);
+            pageSize = Math.Clamp(pageSize, 1, 100);
+
+            var query = _storeDb.Orders.AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(status))
+                query = query.Where(o => o.Status == status);
+
+            return await query
+                .OrderByDescending(o => o.OrderDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(o => new AdminOrderListItemDto
+                {
+                    Id = o.Id,
+                    OrderDate = o.OrderDate,
+                    BuyerEmail = o.BuyerEmail,
+                    Status = o.Status,
+                    PaymentMethod = o.PaymentMethod,
+                    PaymentReference = o.PaymentReference,
+                    Total = o.Subtotal + o.ShippingFee
+                })
+                .ToListAsync();
+        }
+
+        public async Task<OrderDto?> GetByIdAsync(int id)
+        {
+            var order = await _storeDb.Orders
+                .AsNoTracking()
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            return order is null ? null : ToDto(order);
+        }
+
+        public async Task<(OrderDto? Order, string? Error, bool NotFound)> UpdateStatusAsync(int id, string newStatus)
+        {
+            if (!OrderStatuses.All.Contains(newStatus))
+                return (null, "حالة الطلب غير صحيحة.", false);
+
+            var order = await _storeDb.Orders
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order is null)
+                return (null, "الطلب غير موجود.", true);
+
+            if (!OrderStatuses.CanTransition(order.Status, newStatus))
+                return (null, $"مينفعش تغيير الحالة من {order.Status} إلى {newStatus}.", false);
+
+            order.Status = newStatus;
+            await _storeDb.SaveChangesAsync();
+
+            return (ToDto(order), null, false);
         }
 
         private static OrderDto ToDto(Order o) => new()

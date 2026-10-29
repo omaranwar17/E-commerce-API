@@ -27,5 +27,24 @@ namespace E_com_Core.Model.Checkout
         public const string Shipped = "Shipped";
         public const string Delivered = "Delivered";
         public const string Cancelled = "Cancelled";
+        public const string Rejected = "Rejected";                           // التحويل مش موجود أو المبلغ غلط
+
+        public static readonly string[] All =
+        {
+            Pending, AwaitingPaymentReview, Confirmed,
+            Shipped, Delivered, Cancelled, Rejected
+        };
+
+        // مين يتحول لمين. أي حالة مش موجودة هنا (Delivered / Cancelled / Rejected) نهائية.
+        private static readonly Dictionary<string, string[]> Transitions = new()
+        {
+            [AwaitingPaymentReview] = new[] { Confirmed, Rejected, Cancelled },
+            [Pending] = new[] { Confirmed, Cancelled },
+            [Confirmed] = new[] { Shipped, Cancelled },
+            [Shipped] = new[] { Delivered },
+        };
+
+        public static bool CanTransition(string from, string to) =>
+            Transitions.TryGetValue(from, out var next) && next.Contains(to);
     }
 }
