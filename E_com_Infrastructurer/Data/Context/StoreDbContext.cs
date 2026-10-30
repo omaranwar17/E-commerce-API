@@ -30,7 +30,9 @@ namespace E_com_Infrastructurer.Data.Context
         {
             //base.OnModelCreating(modelBuilder);
             base.OnModelCreating(modelBuilder);
-            modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());        }
+            modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+            modelBuilder.HasSequence<int>("InvoiceNumbers").StartsAt(1).IncrementsBy(1);
+        }
        
     }
 }
