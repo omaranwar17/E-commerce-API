@@ -93,12 +93,16 @@ namespace E_come_API.Controllers
                 if (category == null)
                     return BadRequest(new ResponseApi(400, "الكاتجري مش موجودة"));
 
-                // ✅ التعديل هنا: التحقق من الليستة مش المقاس الواحد
                 if (category.HasSizes && (dtos.Sizes == null || dtos.Sizes.Count == 0))
                     return BadRequest(new ResponseApi(400, "لازم تختار مقاس واحد على الأقل للمنتج ده"));
 
                 if (!category.HasSizes)
                     dtos.Sizes = null;
+
+                // ✅ Barcode: تنظيف + فحص التكرار
+                dtos.Barcode = string.IsNullOrWhiteSpace(dtos.Barcode) ? null : dtos.Barcode.Trim();
+                if (dtos.Barcode != null && await work.productRepository.BarcodeExistsAsync(dtos.Barcode))
+                    return Conflict(new ResponseApi(409, "الباركود ده مستخدم لمنتج تاني"));
 
                 await work.productRepository.AddAsync(dtos);
                 return Ok(new ResponseApi(201));
@@ -121,12 +125,16 @@ namespace E_come_API.Controllers
                 if (category == null)
                     return BadRequest(new ResponseApi(400, "الكاتجري مش موجودة"));
 
-                // ✅ التعديل هنا: التحقق من الليستة مش المقاس الواحد
                 if (category.HasSizes && (dto.Sizes == null || dto.Sizes.Count == 0))
                     return BadRequest(new ResponseApi(400, "لازم تختار مقاس واحد على الأقل للمنتج ده"));
 
                 if (!category.HasSizes)
                     dto.Sizes = null;
+
+                // ✅ Barcode: تنظيف + فحص التكرار (مع استثناء المنتج نفسه)
+                dto.Barcode = string.IsNullOrWhiteSpace(dto.Barcode) ? null : dto.Barcode.Trim();
+                if (dto.Barcode != null && await work.productRepository.BarcodeExistsAsync(dto.Barcode, dto.Id))
+                    return Conflict(new ResponseApi(409, "الباركود ده مستخدم لمنتج تاني"));
 
                 var updated = await work.productRepository.UpdateAsync(dto);
                 if (!updated) return NotFound(new ResponseApi(404, "Product not found"));
