@@ -13,6 +13,7 @@ namespace E_com_Core.Model.Products
         public string Name { get; set; }
         public string Description { get; set; }
         public decimal NewPrice { get; set; }
+        public string? Barcode { get; set; }
         public decimal OldPrice { get; set; }
         //public ProductSize? Size { get; set; }   // nullable، بيتملي بس لو الكاتجري هدوم
         public string? Sizes { get; set; } // هيخزن زي "S,M,L" 

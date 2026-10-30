@@ -81,6 +81,7 @@ namespace E_com_Infrastructurer.Repository
                     Description = p.Description,
                     NewPrice = p.NewPrice,
                     OldPrice = p.OldPrice,
+                    Barcode = p.Barcode,
                     CategoryName = p.Categorys.Name,
                     Photos = p.Photos.Select(ph => new PhotoDtos
                     {
@@ -107,6 +108,8 @@ namespace E_com_Infrastructurer.Repository
             var prod = mapper.Map<Product>(productDto);
            await storeDb.Products.AddAsync(prod);
             await storeDb.SaveChangesAsync();
+            if (string.IsNullOrEmpty(prod.Barcode))
+                prod.Barcode = BarcodeGenerator.GenerateEan13(prod.Id);
             var img = await services.AddImageAsync(productDto.Photos , productDto.Name);
             var path = img.Select((s) => new Photo
             {
@@ -168,14 +171,22 @@ namespace E_com_Infrastructurer.Repository
 
             if (findProd == null) return false;
 
-            // 1. تحديث بيانات المنتج الأساسية
+            // 1. حفظ الباركود الحالي قبل الـ Map عشان الـ Map بيكتب فوقه بـ null
+            var currentBarcode = findProd.Barcode;
+
+            // 2. تحديث بيانات المنتج الأساسية
             mapper.Map(productDto, findProd);
 
-            // 2. التعامل مع الصور (التعديل هنا)
-            // نشوف هل المستخدم باعت صور جديدة ولا لأ
+            // 3. الباركود: الجديد لو اتبعت، وإلا القديم، وإلا يتولد تلقائي
+            findProd.Barcode = !string.IsNullOrWhiteSpace(productDto.Barcode)
+                ? productDto.Barcode.Trim()
+                : (string.IsNullOrEmpty(currentBarcode)
+                    ? BarcodeGenerator.GenerateEan13(findProd.Id)
+                    : currentBarcode);
+
+            // 4. التعامل مع الصور
             if (productDto.Photos != null && productDto.Photos.Count > 0)
             {
-                // لو باعت صور جديدة: نمسح القديمة ونضيف الجديدة
                 var oldPhotos = await storeDb.Photos.Where((p) => p.ProductId == productDto.Id).ToListAsync();
                 foreach (var item in oldPhotos)
                 {
@@ -192,10 +203,16 @@ namespace E_com_Infrastructurer.Repository
 
                 await storeDb.Photos.AddRangeAsync(path);
             }
-            // لو مفيش صور جديدة (productDto.Photos فاضية أو null)، منعملش حاجة والصور القديمة هتفضل زي ما هي
+            // لو مفيش صور جديدة، الصور القديمة تفضل زي ما هي
 
             await storeDb.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<bool> BarcodeExistsAsync(string barcode, int? excludeId = null)
+        {
+            return await storeDb.Products
+                .AnyAsync(p => p.Barcode == barcode && (excludeId == null || p.Id != excludeId));
         }
     }
 }

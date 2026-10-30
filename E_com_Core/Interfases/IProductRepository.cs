@@ -17,5 +17,6 @@ namespace E_com_Core.Interfases
         Task<bool> AddAsync(AddPDtos productDto);
         Task<bool> UpdateAsync(EditProdDto productDto);
         Task<bool> Delete(Product product);
+        Task<bool> BarcodeExistsAsync(string barcode, int? excludeId = null);
     }
 }
