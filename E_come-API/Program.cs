@@ -3,6 +3,8 @@ using E_com_Core.Model.Checkout;
 using E_com_Core.Model.User;
 using E_com_Core.Services;
 using E_com_Infrastructurer;
+using QuestPDF.Drawing;
+using QuestPDF.Infrastructure;
 using E_com_Infrastructurer.Data.Context;
 using E_com_Infrastructurer.Repository;
 using E_com_Infrastructurer.Repository.Services;
@@ -93,7 +95,22 @@ namespace E_come_API
                 };
             });
 
+            builder.Services.Configure<InvoiceSettings>(
+    builder.Configuration.GetSection("InvoiceSettings"));
+            builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+            builder.Services.Configure<InvoiceSettings>(
+    builder.Configuration.GetSection("InvoiceSettings"));
+
+
+          
+            QuestPDF.Settings.License = LicenseType.Community;
+
+          
+
+
+
             builder.Services.AddMemoryCache();
+            
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

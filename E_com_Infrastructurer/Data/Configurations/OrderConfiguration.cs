@@ -36,5 +36,12 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasIndex(x => x.PaymentReference)
                .IsUnique()
                .HasFilter("[PaymentReference] IS NOT NULL");
+
+        // الفاتورة
+        builder.Property(x => x.InvoiceNumber).HasMaxLength(30);
+
+        builder.HasIndex(x => x.InvoiceNumber)
+               .IsUnique()
+               .HasFilter("[InvoiceNumber] IS NOT NULL");
     }
 }

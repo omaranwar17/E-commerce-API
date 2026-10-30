@@ -13,6 +13,9 @@ namespace E_com_Core.Dtos
         public List<OrderItemDto> Items { get; set; } = new();
         public decimal Subtotal { get; set; }
         public decimal ShippingFee { get; set; }
+        public string? InvoiceNumber { get; set; }
+        public DateTime? InvoiceDate { get; set; }
+        public DateTime? InvoiceVoidedAt { get; set; }
         public decimal Total { get; set; }
     }
 

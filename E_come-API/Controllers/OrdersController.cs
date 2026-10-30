@@ -15,11 +15,16 @@ namespace E_come_API.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly IOrderService _orders;
+        private readonly IInvoiceService _invoices;
         private readonly PaymentSettings _payment;
 
-        public OrdersController(IOrderService orders, IOptions<PaymentSettings> payment)
+        public OrdersController(
+            IOrderService orders,
+            IInvoiceService invoices,
+            IOptions<PaymentSettings> payment)
         {
             _orders = orders;
+            _invoices = invoices;
             _payment = payment.Value;
         }
 
@@ -65,6 +70,38 @@ namespace E_come_API.Controllers
 
             var order = await _orders.GetMyOrderAsync(email, id);
             return order is null ? NotFound() : Ok(order);
+        }
+        [Authorize] // أي حد مسجل دخول
+        [HttpGet("{id:int}/my-invoice")]
+        public async Task<IActionResult> GetMyInvoice(int id)
+        {
+            var email = User.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrWhiteSpace(email)) return Unauthorized();
+
+            var order = await _orders.GetMyOrderAsync(email, id); // بتجيب أوردر العميل بس
+            if (order is null || order.InvoiceNumber is null)
+                return NotFound(new { message = "الفاتورة غير متاحة." });
+
+            var pdf = _invoices.Generate(order);
+            return File(pdf, "application/pdf", $"{order.InvoiceNumber}.pdf");
+        }
+
+
+        [Authorize(Roles = "Admin")] // الأدمن بس اللي يقدر يدخل هنا
+        [HttpGet("{id:int}/admin-invoice")]
+        public async Task<IActionResult> GetInvoiceForAdmin(int id)
+        {
+            // الأدمن بيجيب الأوردر بالـ ID مباشرة من غير ما نهتم بالإيميل
+            var order = await _orders.GetByIdAsync(id);
+
+            if (order is null)
+                return NotFound(new { message = "الطلب غير موجود." });
+
+            if (order.InvoiceNumber is null)
+                return BadRequest(new { message = "لم يتم إصدار فاتورة لهذا الطلب بعد." });
+
+            var pdf = _invoices.Generate(order);
+            return File(pdf, "application/pdf", $"{order.InvoiceNumber}.pdf");
         }
     }
 }
