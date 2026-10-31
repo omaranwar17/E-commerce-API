@@ -62,6 +62,41 @@ namespace E_com_Infrastructurer.Repository
             return "Registered successfully";
         }
 
+        //public async Task<string> LoginAsync(LoginDTO loginDTO)
+        //{
+        //    ArgumentNullException.ThrowIfNull(loginDTO);
+
+        //    var user = await _userManager.FindByEmailAsync(loginDTO.Email);
+        //    if (user is null)
+        //        return "Invalid email or password";
+
+        //    // lockoutOnFailure: true => بعد 5 محاولات غلط الحساب بيتقفل 5 دقايق (الافتراضي)
+        //    var result = await _signIn.CheckPasswordSignInAsync(user, loginDTO.Password, lockoutOnFailure: true);
+
+        //    if (result.IsLockedOut)
+        //        return "Account is locked. Please try again later";
+
+        //    if (!result.Succeeded)
+        //        return "Invalid email or password";
+
+        //    //بنتحقق من التأكيد بعد الباسورد عشان ما نكشفش إن الإيميل مسجل لشخص غريب
+        //    if (!await _userManager.IsEmailConfirmedAsync(user))
+        //    {
+        //        string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+        //        await SendEmail(
+        //            user.Email!,
+        //            token,
+        //            "active",
+        //            "Active Email",
+        //            "Please active your email, click on button to active");
+
+        //        return "Please confirm your email first, we have sent an activation link to your E-mail";
+        //    }
+
+        //    return await _token1.GetAndCreateToken(user);
+        //}
+
         public async Task<string> LoginAsync(LoginDTO loginDTO)
         {
             ArgumentNullException.ThrowIfNull(loginDTO);
@@ -70,7 +105,6 @@ namespace E_com_Infrastructurer.Repository
             if (user is null)
                 return "Invalid email or password";
 
-            // lockoutOnFailure: true => بعد 5 محاولات غلط الحساب بيتقفل 5 دقايق (الافتراضي)
             var result = await _signIn.CheckPasswordSignInAsync(user, loginDTO.Password, lockoutOnFailure: true);
 
             if (result.IsLockedOut)
@@ -79,20 +113,8 @@ namespace E_com_Infrastructurer.Repository
             if (!result.Succeeded)
                 return "Invalid email or password";
 
-            //بنتحقق من التأكيد بعد الباسورد عشان ما نكشفش إن الإيميل مسجل لشخص غريب
-            if (!await _userManager.IsEmailConfirmedAsync(user))
-            {
-                string token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-
-                await SendEmail(
-                    user.Email!,
-                    token,
-                    "active",
-                    "Active Email",
-                    "Please active your email, click on button to active");
-
-                return "Please confirm your email first, we have sent an activation link to your E-mail";
-            }
+            // 🔥 التعديل هنا: شيلنا شرط الـ IsEmailConfirmed
+            // عشان المستخدم يدخل على طول
 
             return await _token1.GetAndCreateToken(user);
         }
