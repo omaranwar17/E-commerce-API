@@ -59,6 +59,9 @@ namespace E_com_Infrastructurer.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("ReceiptImage")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<decimal>("ShippingFee")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");

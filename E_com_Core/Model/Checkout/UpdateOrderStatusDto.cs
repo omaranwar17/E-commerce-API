@@ -18,6 +18,7 @@ namespace E_com_Core.Model.Checkout
         public int Id { get; set; }
         public DateTime OrderDate { get; set; }
         public string BuyerEmail { get; set; } = string.Empty;
+        public bool HasReceipt { get; set; }
         public string Status { get; set; } = string.Empty;
         public string PaymentMethod { get; set; } = string.Empty;
         public string? PaymentReference { get; set; }
