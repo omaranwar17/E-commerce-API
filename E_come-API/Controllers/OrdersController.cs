@@ -17,22 +17,26 @@ namespace E_come_API.Controllers
         private readonly IOrderService _orders;
         private readonly IInvoiceService _invoices;
         private readonly PaymentSettings _payment;
+        private readonly IFileService _files;                              // <-- جديد
 
         public OrdersController(
             IOrderService orders,
             IInvoiceService invoices,
-            IOptions<PaymentSettings> payment)
+            IOptions<PaymentSettings> payment,
+            IFileService files)                                            // <-- جديد
         {
             _orders = orders;
             _invoices = invoices;
             _payment = payment.Value;
+            _files = files;                                                // <-- جديد
         }
 
         [HttpGet("payment-info")]
         public ActionResult<PaymentSettings> GetPaymentInfo() => Ok(_payment);
 
         [HttpPost]
-        public async Task<ActionResult<OrderDto>> Create([FromBody] AddOrderDto dto)
+        [Consumes("multipart/form-data")]                                  // <-- جديد
+        public async Task<ActionResult<OrderDto>> Create([FromForm] AddOrderDto dto)   // <-- جديد: FromForm
         {
             var email = User.FindFirstValue(ClaimTypes.Email);
 
@@ -40,12 +44,37 @@ namespace E_come_API.Controllers
             if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized();
 
+            // <-- جديد: رفع صورة الإيصال لو طريقة الدفع تحتاج تحويل
+            string? receiptFileName = null;
+
+            if (PaymentMethods.RequiresReference(dto.PaymentMethod))
+            {
+                if (dto.ReceiptImage is null)
+                    return BadRequest(new { message = "صورة التحويل مطلوبة." });
+
+                try
+                {
+                    receiptFileName = await _files.SaveReceiptAsync(dto.ReceiptImage);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return BadRequest(new { message = ex.Message });
+                }
+            }
+
             var (order, error) = await _orders.CreateAsync(
                 userId, email ?? string.Empty, dto.ShippingAddress,
-                dto.PaymentMethod, dto.PaymentReference);
+                dto.PaymentMethod, dto.PaymentReference,
+                receiptFileName);                                          // <-- جديد
 
             if (error is not null)
+            {
+                // <-- جديد: الطلب فشل، فامسح الصورة عشان متتراكمش
+                if (receiptFileName is not null)
+                    _files.DeleteReceipt(receiptFileName);
+
                 return BadRequest(new { message = error });
+            }
 
             return Ok(order);
         }
@@ -68,9 +97,31 @@ namespace E_come_API.Controllers
             if (string.IsNullOrWhiteSpace(email))
                 return Unauthorized();
 
-            var order = await _orders.GetMyOrderAsync(email, id);
+            var order = User.IsInRole("Admin")
+                ? await _orders.GetByIdAsync(id)             // الأدمن يشوف أي طلب
+                : await _orders.GetMyOrderAsync(email, id);  // العميل يشوف طلبه بس
+
             return order is null ? NotFound() : Ok(order);
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            // هات اسم الصورة قبل المسح
+            var fileName = await _orders.GetReceiptFileNameAsync(id);
+
+            var (success, error, notFound) = await _orders.DeleteAsync(id);
+            if (notFound) return NotFound(new { message = error });
+            if (!success) return BadRequest(new { message = error });
+
+            // امسح الصورة بعد نجاح المسح من الداتابيز
+            if (!string.IsNullOrEmpty(fileName))
+                _files.DeleteReceipt(fileName);
+
+            return NoContent();
+        }
+
         [Authorize] // أي حد مسجل دخول
         [HttpGet("{id:int}/my-invoice")]
         public async Task<IActionResult> GetMyInvoice(int id)
@@ -85,7 +136,6 @@ namespace E_come_API.Controllers
             var pdf = _invoices.Generate(order);
             return File(pdf, "application/pdf", $"{order.InvoiceNumber}.pdf");
         }
-
 
         [Authorize(Roles = "Admin")] // الأدمن بس اللي يقدر يدخل هنا
         [HttpGet("{id:int}/admin-invoice")]
@@ -102,6 +152,29 @@ namespace E_come_API.Controllers
 
             var pdf = _invoices.Generate(order);
             return File(pdf, "application/pdf", $"{order.InvoiceNumber}.pdf");
+        }
+
+        // <-- جديد: عرض صورة الإيصال للأدمن بس
+        [Authorize(Roles = "Admin")]
+        [HttpGet("{id:int}/receipt")]
+        public async Task<IActionResult> GetReceipt(int id)
+        {
+            var fileName = await _orders.GetReceiptFileNameAsync(id);
+            if (string.IsNullOrEmpty(fileName))
+                return NotFound(new { message = "لا توجد صورة إيصال لهذا الطلب." });
+
+            var path = _files.GetReceiptPath(fileName);
+            if (!System.IO.File.Exists(path))
+                return NotFound();
+
+            var contentType = Path.GetExtension(path).ToLowerInvariant() switch
+            {
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                _ => "image/jpeg"
+            };
+
+            return PhysicalFile(path, contentType);
         }
     }
 }

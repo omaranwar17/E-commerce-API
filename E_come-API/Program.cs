@@ -48,12 +48,13 @@ namespace E_come_API
             .AddDefaultTokenProviders();
 
             builder.Services.InfrastructurerColl(builder.Configuration);
-
+            builder.Services.AddScoped<IFileService, FileService>();
             builder.Services.AddScoped<IImageServices, ImageServices>();
             builder.Services.AddScoped<IAuth, AuthRepository>();
             builder.Services.AddScoped<IEmailService, EmailService>();
             builder.Services.AddScoped<ICustomerBasketRepository, CustomerBasketRepository>();
             builder.Services.AddScoped<IOrderService, OrderService>();
+           
             builder.Services.Configure<PaymentSettings>(
     builder.Configuration.GetSection("PaymentSettings"));
 

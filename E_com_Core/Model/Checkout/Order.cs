@@ -14,7 +14,8 @@ namespace E_com_Core.Model.Checkout
         public string Status { get; set; } = "Pending";
         public string PaymentMethod { get; set; } = "CashOnDelivery";
         public List<OrderItem> Items { get; set; } = new();
-      
+        public string? ReceiptImage { get; set; }
+
         public decimal Subtotal { get; set; }
         public string? PaymentReference { get; set; }
         public decimal ShippingFee { get; set; }
